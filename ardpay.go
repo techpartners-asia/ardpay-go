@@ -126,7 +126,7 @@ func (a *ardpay) TanPayment(amount float64, desc, orderNo, tan, msisdn string) e
 	if err != nil {
 		return err
 	}
-	if res.IsError() {
+	if res.StatusCode() != 200 {
 		return errors.New(res.String())
 	}
 	return nil
