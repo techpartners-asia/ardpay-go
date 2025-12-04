@@ -10,7 +10,7 @@ type Ardpay interface {
 	CreateQrPayment(amount float64, invoiceID string) (response CreateQrPaymentResponse, err error) // QR төлбөр үүсгэх
 	CheckQrPayment(paymentId, qrCode string) (response CheckQrPaymentResponse, err error)           // QR төлбөр шалгах
 	CancelQrPayment(qrCode string) (response CancelQrPaymentResponse, err error)                    // QR төлбөр цуцлах
-	TanPayment(amount float64, desc, orderNo, tan, msisdn string) error                             // Тантай худалдан авалт
+	TanPayment(amount float64, desc, orderNo, tan, msisdn string) error                             // ТАНтай худалдан авалт
 }
 
 type ardpay struct {
@@ -43,8 +43,8 @@ func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (response Cre
 	res, err := client.R().
 		SetHeader("APIKEY", a.APIKey).
 		SetHeader("Content-Type", "application/json").
-		SetBody(body).        // default request content type is JSON
-		SetResult(&response). // or SetResult(LoginResponse{}).
+		SetBody(body).
+		SetResult(&response).
 		Post(a.Url + "/resources/merch/v1.0/createqr")
 	if err != nil {
 		return response, err
@@ -104,7 +104,7 @@ func (a *ardpay) CancelQrPayment(qrCode string) (response CancelQrPaymentRespons
 	return response, nil
 }
 
-// Тантай худалдан авалт
+// ТАНтай худалдан авалт
 func (a *ardpay) TanPayment(amount float64, desc, orderNo, tan, msisdn string) error {
 	body := TanPaymentRequest{
 		MerchantID:  a.MerchantID,
