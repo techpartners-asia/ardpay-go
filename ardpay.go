@@ -8,10 +8,11 @@ import (
 )
 
 type Ardpay interface {
-	CreateQrPayment(input CreateQrInput) (*CreateQrPaymentResponse, error) // QR төлбөр үүсгэх
-	CheckQrPayment(input CheckQrInput) (*CheckQrPaymentResponse, error)    // QR төлбөр шалгах
-	CancelQrPayment(input CancelQrInput) (*CancelQrPaymentResponse, error) // QR төлбөр цуцлах
-	TanPayment(input TanInput) error                                       // ТАНтай худалдан авалт
+	CreateQrPayment(input CreateQrInput) (*CreateQrPaymentResponse, error)     // QR төлбөр үүсгэх
+	CheckQrPayment(input CheckQrPaymentInput) (*CheckQrPaymentResponse, error) // QR төлбөр шалгах
+	CheckQr(input CheckQrInput) (*CheckQrResponse, error)                      // QR төлбөр төлөгдсөн эсэхийг шалгах
+	CancelQrPayment(input CancelQrInput) (*CancelQrPaymentResponse, error)     // QR төлбөр цуцлах
+	TanPayment(input TanInput) error                                           // ТАНтай худалдан авалт
 }
 
 type ardpay struct {
@@ -70,13 +71,53 @@ func (a *ardpay) CreateQrPayment(input CreateQrInput) (*CreateQrPaymentResponse,
 	return &response, nil
 }
 
-type CheckQrInput struct {
+type GetQrDataInput struct {
+	Type         string `json:"type"`
+	CustomerCode string `json:"customerCode"`
+	BankCode     string `json:"bankCode"`
+	BankVerfCode string `json:"bankVerfCode"`
+	BankTxCode   string `json:"bankTxCode"`
+	QrCode       string `json:"qrCode"`
+}
+
+func (a *ardpay) GetQrData(input GetQrDataInput) (*GetQrDataResponse, error) {
+	body := GetQrDataRequest{
+		PayeeCode:    a.MerchantID,
+		PosNo:        a.PosNo,
+		Type:         input.Type,
+		CustomerCode: input.CustomerCode,
+		BankCode:     input.BankCode,
+		BankVerfCode: input.BankVerfCode,
+		JsonData: JsonData{
+			BankTxCode: input.BankTxCode,
+			QrCode:     input.QrCode,
+		},
+	}
+	client := resty.New()
+	defer client.Close()
+	var response GetQrDataResponse
+	res, err := client.R().
+		SetHeader("APIKEY", a.APIKey).
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		SetResult(&response).
+		Post(a.Url + "/resources/merch/v1.0/getqrdata")
+	if err != nil {
+		return nil, err
+	}
+	if res.IsError() {
+		return nil, errors.New(res.String())
+	}
+	return &response, nil
+}
+
+type CheckQrPaymentInput struct {
 	PaymentId string `json:"paymentId"`
 	QrCode    string `json:"qrCode"`
 }
 
 // QR төлбөр шалгах
-func (a *ardpay) CheckQrPayment(input CheckQrInput) (*CheckQrPaymentResponse, error) {
+func (a *ardpay) CheckQrPayment(input CheckQrPaymentInput) (*CheckQrPaymentResponse, error) {
 	body := CheckQrPaymentRequest{
 		PayeeCode: a.MerchantID,
 		PosNo:     a.PosNo,
@@ -92,6 +133,38 @@ func (a *ardpay) CheckQrPayment(input CheckQrInput) (*CheckQrPaymentResponse, er
 		SetBody(body).
 		SetResult(&response).
 		Post(a.Url + "/resources/merch/v1.0/checkQrPayment")
+	if err != nil {
+		return nil, err
+	}
+	if res.IsError() {
+		return nil, errors.New(res.String())
+	}
+	if response.ResponseCode != 0 {
+		return nil, errors.New("Error code: " + strconv.Itoa(response.ResponseCode) + " Error description: " + response.ResponseDesc)
+	}
+	return &response, nil
+}
+
+type CheckQrInput struct {
+	QrCode []string `json:"qrCode"`
+}
+
+// QR төлбөр төлөгдсөн эсэхийг шалгах
+func (a *ardpay) CheckQr(input CheckQrInput) (*CheckQrResponse, error) {
+	body := CheckQrRequest{
+		PayeeCode: a.MerchantID,
+		PosNo:     a.PosNo,
+		QrCode:    input.QrCode,
+	}
+	client := resty.New()
+	defer client.Close()
+	var response CheckQrResponse
+	res, err := client.R().
+		SetHeader("APIKEY", a.APIKey).
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		SetResult(&response).
+		Post(a.Url + "/resources/merch/v1.0/checkqr")
 	if err != nil {
 		return nil, err
 	}
