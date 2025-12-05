@@ -7,10 +7,10 @@ import (
 )
 
 type Ardpay interface {
-	CreateQrPayment(amount float64, invoiceID string) (response CreateQrPaymentResponse, err error) // QR төлбөр үүсгэх
-	CheckQrPayment(paymentId, qrCode string) (response CheckQrPaymentResponse, err error)           // QR төлбөр шалгах
-	CancelQrPayment(qrCode string) (response CancelQrPaymentResponse, err error)                    // QR төлбөр цуцлах
-	TanPayment(amount float64, desc, orderNo, tan, msisdn string) error                             // ТАНтай худалдан авалт
+	CreateQrPayment(amount float64, invoiceID string) (*CreateQrPaymentResponse, error) // QR төлбөр үүсгэх
+	CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentResponse, error)           // QR төлбөр шалгах
+	CancelQrPayment(qrCode string) (*CancelQrPaymentResponse, error)                    // QR төлбөр цуцлах
+	TanPayment(amount float64, desc, orderNo, tan, msisdn string) error                 // ТАНтай худалдан авалт
 }
 
 type ardpay struct {
@@ -30,7 +30,7 @@ func New(url, merchantID, posNo, apiKey string) Ardpay {
 }
 
 // QR төлбөр үүсгэх
-func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (response CreateQrPaymentResponse, err error) {
+func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (*CreateQrPaymentResponse, error) {
 	body := CreateQrPaymentRequest{
 		MerchantID: a.MerchantID,
 		PosNo:      a.PosNo,
@@ -40,6 +40,7 @@ func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (response Cre
 	}
 	client := resty.New()
 	defer client.Close()
+	var response CreateQrPaymentResponse
 	res, err := client.R().
 		SetHeader("APIKEY", a.APIKey).
 		SetHeader("Content-Type", "application/json").
@@ -47,16 +48,16 @@ func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (response Cre
 		SetResult(&response).
 		Post(a.Url + "/resources/merch/v1.0/createqr")
 	if err != nil {
-		return response, err
+		return nil, err
 	}
 	if res.IsError() {
-		return response, errors.New(res.String())
+		return nil, errors.New(res.String())
 	}
-	return response, nil
+	return &response, nil
 }
 
 // QR төлбөр шалгах
-func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (response CheckQrPaymentResponse, err error) {
+func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentResponse, error) {
 	body := CheckQrPaymentRequest{
 		MerchantID: a.MerchantID,
 		PosNo:      a.PosNo,
@@ -65,6 +66,7 @@ func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (response CheckQrPayme
 	}
 	client := resty.New()
 	defer client.Close()
+	var response CheckQrPaymentResponse
 	res, err := client.R().
 		SetHeader("APIKEY", a.APIKey).
 		SetHeader("Content-Type", "application/json").
@@ -72,16 +74,16 @@ func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (response CheckQrPayme
 		SetResult(&response).
 		Post(a.Url + "/resources/merch/v1.0/checkQrPayment")
 	if err != nil {
-		return response, err
+		return nil, err
 	}
 	if res.IsError() {
-		return response, errors.New(res.String())
+		return nil, errors.New(res.String())
 	}
-	return response, nil
+	return &response, nil
 }
 
 // QR төлбөр цуцлах
-func (a *ardpay) CancelQrPayment(qrCode string) (response CancelQrPaymentResponse, err error) {
+func (a *ardpay) CancelQrPayment(qrCode string) (*CancelQrPaymentResponse, error) {
 	body := CancelQrPaymentRequest{
 		MerchantID: a.MerchantID,
 		PosNo:      a.PosNo,
@@ -89,6 +91,7 @@ func (a *ardpay) CancelQrPayment(qrCode string) (response CancelQrPaymentRespons
 	}
 	client := resty.New()
 	defer client.Close()
+	var response CancelQrPaymentResponse
 	res, err := client.R().
 		SetHeader("APIKEY", a.APIKey).
 		SetHeader("Content-Type", "application/json").
@@ -96,12 +99,12 @@ func (a *ardpay) CancelQrPayment(qrCode string) (response CancelQrPaymentRespons
 		SetResult(&response).
 		Post(a.Url + "/resources/merch/v1.0/cancelQrPayment")
 	if err != nil {
-		return response, err
+		return nil, err
 	}
 	if res.IsError() {
-		return response, errors.New(res.String())
+		return nil, errors.New(res.String())
 	}
-	return response, nil
+	return &response, nil
 }
 
 // ТАНтай худалдан авалт
