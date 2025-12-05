@@ -99,7 +99,7 @@ func (a *ardpay) CancelQrPayment(qrCodes []string) (*CancelQrPaymentResponse, er
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		SetResult(&response).
-		Post(a.Url + "/resources/merch/v1.0/cancelQrPayment")
+		Post(a.Url + "/resources/merch/v1.0/cancelqr")
 	if err != nil {
 		return nil, err
 	}
