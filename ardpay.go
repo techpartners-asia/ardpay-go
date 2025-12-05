@@ -2,15 +2,16 @@ package ardpay
 
 import (
 	"errors"
+	"strconv"
 
 	"resty.dev/v3"
 )
 
 type Ardpay interface {
-	CreateQrPayment(amount float64, invoiceID string) (*CreateQrPaymentResponse, error) // QR төлбөр үүсгэх
-	CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentResponse, error)           // QR төлбөр шалгах
-	CancelQrPayment(qrCodes []string) (*CancelQrPaymentResponse, error)                 // QR төлбөр цуцлах
-	TanPayment(amount float64, desc, orderNo, tan, msisdn string) error                 // ТАНтай худалдан авалт
+	CreateQrPayment(input CreateQrInput) (*CreateQrPaymentResponse, error) // QR төлбөр үүсгэх
+	CheckQrPayment(input CheckQrInput) (*CheckQrPaymentResponse, error)    // QR төлбөр шалгах
+	CancelQrPayment(input CancelQrInput) (*CancelQrPaymentResponse, error) // QR төлбөр цуцлах
+	TanPayment(input TanInput) error                                       // ТАНтай худалдан авалт
 }
 
 type ardpay struct {
@@ -29,16 +30,24 @@ func New(url, merchantID, posNo, apiKey string) Ardpay {
 	}
 }
 
+type CreateQrInput struct {
+	Amount      float64 `json:"tranAmnt"`
+	Currency    string  `json:"tranCur"`
+	Description string  `json:"tranDesc"`
+	InvoiceID   string  `json:"invoiceId"`
+	PaidLimit   float64 `json:"paidLimit"`
+}
+
 // QR төлбөр үүсгэх
-func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (*CreateQrPaymentResponse, error) {
+func (a *ardpay) CreateQrPayment(input CreateQrInput) (*CreateQrPaymentResponse, error) {
 	body := CreateQrPaymentRequest{
-		MerchantID:  a.MerchantID,
-		PosNo:       a.PosNo,
-		Amount:      amount,
-		InvoiceID:   invoiceID,
-		Description: "",
-		Currency:    "MNT",
-		PaidLimit:   1,
+		PayeeCode:              a.MerchantID,
+		PosNo:                  a.PosNo,
+		TransactionAmount:      input.Amount,
+		InvoiceID:              input.InvoiceID,
+		TransactionDescription: input.Description,
+		TransactionCurrency:    input.Currency,
+		PaidLimit:              input.PaidLimit,
 	}
 	client := resty.New()
 	defer client.Close()
@@ -55,16 +64,24 @@ func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (*CreateQrPay
 	if res.IsError() {
 		return nil, errors.New(res.String())
 	}
+	if response.ResponseCode != 0 {
+		return nil, errors.New("Error code: " + strconv.Itoa(response.ResponseCode) + " Error description: " + response.ResponseDesc)
+	}
 	return &response, nil
 }
 
+type CheckQrInput struct {
+	PaymentId string `json:"paymentId"`
+	QrCode    string `json:"qrCode"`
+}
+
 // QR төлбөр шалгах
-func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentResponse, error) {
+func (a *ardpay) CheckQrPayment(input CheckQrInput) (*CheckQrPaymentResponse, error) {
 	body := CheckQrPaymentRequest{
-		MerchantID: a.MerchantID,
-		PosNo:      a.PosNo,
-		InvoiceID:  paymentId,
-		QrCode:     qrCode,
+		PayeeCode: a.MerchantID,
+		PosNo:     a.PosNo,
+		InvoiceID: input.PaymentId,
+		QrCode:    input.QrCode,
 	}
 	client := resty.New()
 	defer client.Close()
@@ -81,15 +98,22 @@ func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentRespon
 	if res.IsError() {
 		return nil, errors.New(res.String())
 	}
+	if response.ResponseCode != 0 {
+		return nil, errors.New("Error code: " + strconv.Itoa(response.ResponseCode) + " Error description: " + response.ResponseDesc)
+	}
 	return &response, nil
 }
 
+type CancelQrInput struct {
+	QrCodes []string `json:"qrCodes"`
+}
+
 // QR төлбөр цуцлах
-func (a *ardpay) CancelQrPayment(qrCodes []string) (*CancelQrPaymentResponse, error) {
+func (a *ardpay) CancelQrPayment(input CancelQrInput) (*CancelQrPaymentResponse, error) {
 	body := CancelQrPaymentRequest{
-		MerchantID: a.MerchantID,
-		PosNo:      a.PosNo,
-		QrCode:     qrCodes,
+		PayeeCode: a.MerchantID,
+		PosNo:     a.PosNo,
+		QrCode:    input.QrCodes,
 	}
 	client := resty.New()
 	defer client.Close()
@@ -106,20 +130,32 @@ func (a *ardpay) CancelQrPayment(qrCodes []string) (*CancelQrPaymentResponse, er
 	if res.IsError() {
 		return nil, errors.New(res.String())
 	}
+	if response.ResponseCode != 0 {
+		return nil, errors.New("Error code: " + strconv.Itoa(response.ResponseCode) + " Error description: " + response.ResponseDesc)
+	}
 	return &response, nil
 }
 
+type TanInput struct {
+	Amount      float64 `json:"tranAmnt"`
+	Currency    string  `json:"tranCur"`
+	Description string  `json:"tranDesc"`
+	OrderNo     string  `json:"orderNo"`
+	Tan         string  `json:"tan"`
+	Msisdn      string  `json:"msisdn"`
+}
+
 // ТАНтай худалдан авалт
-func (a *ardpay) TanPayment(amount float64, desc, orderNo, tan, msisdn string) error {
+func (a *ardpay) TanPayment(input TanInput) error {
 	body := TanPaymentRequest{
-		MerchantID:  a.MerchantID,
-		PosNo:       a.PosNo,
-		OrderNo:     orderNo,
-		Amount:      amount,
-		Currency:    "MNT",
-		Description: desc,
-		Tan:         tan,
-		MSISDN:      msisdn,
+		PayeeCode:              a.MerchantID,
+		PosNo:                  a.PosNo,
+		OrderNo:                input.OrderNo,
+		TransactionAmount:      input.Amount,
+		TransactionCurrency:    input.Currency,
+		TransactionDescription: input.Description,
+		Tan:                    input.Tan,
+		MSISDN:                 input.Msisdn,
 	}
 	client := resty.New()
 	defer client.Close()
