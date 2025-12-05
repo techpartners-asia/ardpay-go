@@ -9,7 +9,7 @@ import (
 type Ardpay interface {
 	CreateQrPayment(amount float64, invoiceID string) (*CreateQrPaymentResponse, error) // QR төлбөр үүсгэх
 	CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentResponse, error)           // QR төлбөр шалгах
-	CancelQrPayment(qrCode string) (*CancelQrPaymentResponse, error)                    // QR төлбөр цуцлах
+	CancelQrPayment(qrCodes []string) (*CancelQrPaymentResponse, error)                 // QR төлбөр цуцлах
 	TanPayment(amount float64, desc, orderNo, tan, msisdn string) error                 // ТАНтай худалдан авалт
 }
 
@@ -32,11 +32,13 @@ func New(url, merchantID, posNo, apiKey string) Ardpay {
 // QR төлбөр үүсгэх
 func (a *ardpay) CreateQrPayment(amount float64, invoiceID string) (*CreateQrPaymentResponse, error) {
 	body := CreateQrPaymentRequest{
-		MerchantID: a.MerchantID,
-		PosNo:      a.PosNo,
-		Amount:     amount,
-		InvoiceID:  invoiceID,
-		PaidLimit:  1,
+		MerchantID:  a.MerchantID,
+		PosNo:       a.PosNo,
+		Amount:      amount,
+		InvoiceID:   invoiceID,
+		Description: "",
+		Currency:    "MNT",
+		PaidLimit:   1,
 	}
 	client := resty.New()
 	defer client.Close()
@@ -83,11 +85,11 @@ func (a *ardpay) CheckQrPayment(paymentId, qrCode string) (*CheckQrPaymentRespon
 }
 
 // QR төлбөр цуцлах
-func (a *ardpay) CancelQrPayment(qrCode string) (*CancelQrPaymentResponse, error) {
+func (a *ardpay) CancelQrPayment(qrCodes []string) (*CancelQrPaymentResponse, error) {
 	body := CancelQrPaymentRequest{
 		MerchantID: a.MerchantID,
 		PosNo:      a.PosNo,
-		QrCode:     qrCode,
+		QrCode:     qrCodes,
 	}
 	client := resty.New()
 	defer client.Close()

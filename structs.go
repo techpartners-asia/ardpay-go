@@ -3,7 +3,7 @@ package ardpay
 type (
 	CreateQrPaymentRequest struct {
 		MerchantID  string  `json:"payeeCode"`
-		PosNo       string  `json:"pos_no"`
+		PosNo       string  `json:"posNo"`
 		Amount      float64 `json:"tranAmnt"`
 		Currency    string  `json:"tranCur"`
 		Description string  `json:"tranDesc"`
@@ -20,7 +20,7 @@ type (
 
 	CheckQrPaymentRequest struct {
 		MerchantID string `json:"payeeCode"`
-		PosNo      string `json:"pos_no"`
+		PosNo      string `json:"posNo"`
 		InvoiceID  string `json:"paymentId"`
 		QrCode     string `json:"qrCode"`
 	}
@@ -31,9 +31,9 @@ type (
 	}
 
 	CancelQrPaymentRequest struct {
-		MerchantID string `json:"payeeCode"`
-		PosNo      string `json:"pos_no"`
-		QrCode     string `json:"qrCode"`
+		MerchantID string   `json:"payeeCode"`
+		PosNo      string   `json:"posNo"`
+		QrCode     []string `json:"qrCode"`
 	}
 	CancelQrPaymentResponse struct {
 		ResponseCode int              `json:"responseCode"`
@@ -47,7 +47,7 @@ type (
 	}
 	TanPaymentRequest struct {
 		MerchantID  string  `json:"payeeCode"` // Мерчантын дугаар
-		PosNo       string  `json:"pos_no"`    // POS дугаар
+		PosNo       string  `json:"posNo"`     // POS дугаар
 		OrderNo     string  `json:"orderNo"`   // Захиалгын дугаар
 		Amount      float64 `json:"tranAmnt"`  // Гүйлгээний дүн
 		Currency    string  `json:"tranCur"`   // Валют
