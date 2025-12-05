@@ -16,6 +16,7 @@ type (
 		QrCode        string `json:"qrCode"`
 		QrLink        string `json:"qrLink"`
 		QpayAccountID string `json:"qpayAccountId"`
+		PaymentID     string `json:"paymentId"`
 	}
 
 	CheckQrPaymentRequest struct {
